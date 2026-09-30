@@ -19,9 +19,15 @@ mingw32-make.exe
 ```
 ### MSVC
 ```bash
-mkdir out
-cd out/
-cmake -G "Visual Studio 18 2026" ..
-cmake --build . --config Debug
-./Debug/SpaceWar.exe
+cmake -S . -B build -G "Visual Studio 18 2026" -A x64
+```
+Debug
+```sh
+cmake --build build --config Debug
+./build/Debug/SpaceWar.exe
+```
+or Release
+```sh
+cmake --build build --config Release
+./build/Release/SpaceWar.exe
 ```
