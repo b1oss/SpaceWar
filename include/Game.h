@@ -16,6 +16,14 @@
 #include "Bullet.h"
 #include "Enemy.h"
 
+enum Game_Status
+{
+    MainMenu,
+    InGame,
+    Paused,
+    GameOver
+};
+
 class Game
 {
 private:
@@ -24,10 +32,10 @@ private:
     sf::VideoMode* video_mode_;
     sf::Vector2u window_size_;
     sf::Clock clock_;
-	
+
     float fps_;
     float delta_time_;
-    
+
     // Fonts
     sf::Font font_;
     sf::Text* enemies_killed_text_;
@@ -40,13 +48,11 @@ private:
     sf::Text* continue_game_text_;
 	sf::Text* exit_game_text_;
     sf::Text* game_over_text_;
-    
-	bool main_menu_;
+
 	bool play_selected_;
 	bool continue_selected_;
-	bool in_game_;
-    bool paused_game_;
-    bool game_over_;
+
+    Game_Status game_status;
 
     // Sounds
 	sf::SoundBuffer shoot_buffer_;
@@ -79,48 +85,72 @@ private:
     sf::Vector2f last_mouse_position_;
     float angle_;
 
-    // Private functions
-    void initGameVariables();
-    void initWindow();
-    void initTextures();
-    void setDeltaTime();
-	void initBackgrounds();
+
+    // Main Menu
+    void initMainMenu();
+    void initMainMenuBackground();
+    void initTitle();
 	void initMainMenuTextOptions();
-	void initPauseMenuTextOptions();
     void mainMenuRender();
 	void mainMenuUpdate();
+
+    void initWindow();
+    
+    
+    // Pause Menu
+    void initPauseMenu();
+	void initPauseMenuTextOptions();
     void pauseMenuRender();
     void pauseMenuUpdate();
-
-    void inGameUpdate();
-	void inGameRender();
-    void playerMovement();
-	// void pauseGameRender();
+    void pauseBackground();
+    
+    
+    // In Game
+    void initGameVariables();
+    void initInGame();
+    void initTextures();
+	void initBackgrounds();
     void initGameOverText();
-    void gameOverRender();
+    void inGameUpdate();
+    void initEnemies();
+    void initFonts();
+    void initBusfferSounds();
+	void inGameRender();
+	void setSounds();
+    float getAngle();
+    void playerMovement();
     void updateEnemies();
     void bulletsCollidingEnemies();
     void playerCollidingAllien();
     void updateBullets();
-    void initEnemies();
-    void initFonts();
-    void initBusfferSounds();
-	void setSounds();
+	void updateShipRotation();
+    void updateGUI();
+
+    // Game Over
+    void gameOverRender();
+    
+    // Setters & Getters Private
+    void setGameStatus(Game_Status _game_status);
+    Game_Status getGameStatus() const;
+    void setDeltaTime();
 	sf::Vector2f getMousePosition() const;
     void setCurrentMousePosition();
-    float getAngle();
-	void updateShipRotation();
+
 public:
     Game();
+    ~Game();
+
     void initPlayer();
     void playerCollidingWindow();
-    void updateGUI();
-    void renderGUI();
+
+    void update();
+
     void run();
     bool runningGame() const;
+
     void pollEvent();
-    void update();
+
     void render();
-    ~Game();
+    void renderGUI();
 };
 #endif
