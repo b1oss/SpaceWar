@@ -2,16 +2,7 @@
 
 void Game::initGameVariables()
 {
-    window_size_ = {1900, 1060};
-    this->fps_ = 0.f;
-    this->delta_time_ = 0.f;
     this->counting_enemies_killed_ = 0;
-	this->main_menu_ = true;
-    this->in_game_ = false;
-	this->paused_game_ = false;
-	this->play_selected_ = true;
-    this->continue_selected_ = true;
-    this->game_over_ = false;
 }
 
 void Game::initWindow()
@@ -19,6 +10,45 @@ void Game::initWindow()
     this->video_mode_ = new sf::VideoMode({this->window_size_.x, this->window_size_.y});
     this->window_ = new sf::RenderWindow(*this->video_mode_, "Swaglords Of Space", sf::Style::Close | sf::Style::Titlebar, sf::State::Fullscreen);
     this->window_->setFramerateLimit(60);
+}
+
+void Game::initMainMenu()
+{
+    this->play_selected_ = true;
+    this->continue_selected_ = true;
+    initMainMenuBackground();
+    initTitle();
+    initMainMenuTextOptions();
+}
+
+void Game::initMainMenuBackground()
+{
+    // assets/images/maps/Nebula.jpg
+	this->background_menu_ = new Background("assets/images/maps/Nebula.jpg");
+	this->background_menu_->setBackgroundPosition(0.f, 0.f);
+	this->background_menu_->setBackgroundScale(1.5f, 1.5f);
+}
+
+void Game::initTitle()
+{
+    // assets/images/maps/Title.png
+	this->title_main_screen_ = new Background("assets/images/maps/Title.png");
+	this->title_main_screen_->setBackgroundOrigin();
+	this->title_main_screen_->setBackgroundScale(0.9f, 0.9f);
+    this->title_main_screen_->setBackgroundPosition((static_cast<float>(this->window_->getSize().x) / 2.f) + (title_main_screen_->getBackgroundGlobalBounds().getCenter().x / 2.f), 
+                                                    (static_cast<float>(this->window_->getSize().y) / 3.f) - (title_main_screen_->getBackgroundGlobalBounds().getCenter().y / 2.f));
+}
+
+void Game::initInGame()
+{
+    initGameVariables();
+    std::cout << "Game Initiated Correctly\n";
+    initBackgrounds();
+    initTextures();
+    initBusfferSounds();
+    setSounds();
+    initPlayer();
+    initEnemies();
 }
 
 void Game::initTextures()
@@ -46,22 +76,6 @@ void Game::initBackgrounds()
 	this->background_ = new Background("assets/images/maps/245.png");
 	this->background_->setBackgroundPosition(0.f, 0.f);
 	this->background_->setBackgroundScale(1.5f, 1.5f);
-
-    // assets/images/maps/Nebula.jpg
-	this->background_menu_ = new Background("assets/images/maps/Nebula.jpg");
-	this->background_menu_->setBackgroundPosition(0.f, 0.f);
-	this->background_menu_->setBackgroundScale(1.5f, 1.5f);
-
-	// assets/images/maps/Title.png
-	this->title_main_screen_ = new Background("assets/images/maps/Title.png");
-	this->title_main_screen_->setBackgroundOrigin();
-	this->title_main_screen_->setBackgroundScale(0.9f, 0.9f);
-    this->title_main_screen_->setBackgroundPosition((static_cast<float>(this->window_->getSize().x) / 2.f) + (title_main_screen_->getBackgroundGlobalBounds().getCenter().x / 2.f), 
-                                                    (static_cast<float>(this->window_->getSize().y) / 3.f) - (title_main_screen_->getBackgroundGlobalBounds().getCenter().y / 2.f));
-
-    // assets/images/maps/pause_screen.png
-    this->pause_blur_screen_ = new Background("assets/images/maps/pause_screen.png");
-    this->pause_blur_screen_->setBackgroundPosition(0.f, 0.f);
 }
 
 void Game::initMainMenuTextOptions()
@@ -120,10 +134,10 @@ void Game::mainMenuRender()
 
 void Game::mainMenuUpdate()
 {
-    if (main_menu_ && sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Up) ||
+    if (getGameStatus() == MainMenu && sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Up) ||
         sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Down))
     {
-        if (!in_game_ && play_text_ && exit_text_)
+        if (getGameStatus() != InGame && play_text_ && exit_text_)
         {
             play_selected_ = !play_selected_;
             if (play_selected_)
@@ -141,16 +155,23 @@ void Game::mainMenuUpdate()
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Enter))
     {
-        if (main_menu_ && play_selected_) 
+        if (getGameStatus() == MainMenu && play_selected_) 
         {
-			main_menu_ = false;
-            in_game_ = true;
+			setGameStatus(InGame);
+            initInGame();
         }
-        else if (main_menu_ && !play_selected_)
+        else if (getGameStatus() == MainMenu && !play_selected_)
         {
             this->window_->close();
         }
     }
+}
+
+void Game::initPauseMenu()
+{
+    pauseBackground();
+    initPauseMenuTextOptions();
+    std::cout << "Pause Menu Initialized correctly\n";
 }
 
 void Game::pauseMenuRender()
@@ -164,10 +185,10 @@ void Game::pauseMenuRender()
 
 void Game::pauseMenuUpdate()
 {
-    if (paused_game_ && sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Up) ||
+    if (getGameStatus() == Paused && sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Up) ||
         sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Down))
     {
-        if (!in_game_)
+        if (getGameStatus() != InGame)
         {
             continue_selected_ = !continue_selected_;
             if (continue_selected_)
@@ -184,16 +205,32 @@ void Game::pauseMenuUpdate()
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Enter))
     {
-        if (paused_game_ && continue_selected_)
+        if (getGameStatus() == Paused && continue_selected_)
         {
-            paused_game_ = false;
-            in_game_ = true;
+            setGameStatus(InGame);
         }
-        else if (paused_game_ && !continue_selected_)
+        else if (getGameStatus() == Paused && !continue_selected_)
         {
             this->window_->close();
         }
     }
+}
+
+void Game::pauseBackground()
+{
+    // assets/images/maps/pause_screen.png
+    this->pause_blur_screen_ = new Background("assets/images/maps/pause_screen.png");
+    this->pause_blur_screen_->setBackgroundPosition(0.f, 0.f);
+}
+
+void Game::setGameStatus(Game_Status _game_status)
+{
+    this->game_status = _game_status;
+}
+
+Game_Status Game::getGameStatus() const
+{
+    return game_status;
 }
 
 void Game::inGameUpdate()
@@ -266,6 +303,7 @@ void Game::initGameOverText()
     this->game_over_text_->setOrigin(game_over_text_->getLocalBounds().getCenter());
     this->game_over_text_->setPosition({static_cast<float>(this->window_->getSize().x) / 2.f + (this->game_over_text_->getGlobalBounds().getCenter().x / 2.f),
                                         static_cast<float>(this->window_->getSize().y) / 2.f + (this->game_over_text_->getGlobalBounds().getCenter().y / 2.f) });
+    std::cout << "Game Over Initialized Correclty\n";
 }
 
 void Game::gameOverRender()
@@ -380,8 +418,7 @@ void Game::playerCollidingAllien()
     else 
     {
         this->player_explotes_sound->play();
-        this->in_game_ = false;
-        this->game_over_ = true;
+        setGameStatus(GameOver);
     }
 }
 
@@ -486,19 +523,18 @@ void Game::updateShipRotation()
 
 Game::Game()
 {
-    this->initGameVariables();
-    this->initWindow();
-	this->initBackgrounds();
-    this->initTextures();
-    this->initFonts();
-    this->initBusfferSounds();
-    this->initMainMenuTextOptions();
-    this->initPauseMenuTextOptions();
-    this->initGameOverText();
-    this->setCurrentMousePosition();
-	this->setSounds();
-    this->initPlayer();
-    this->initEnemies();
+    window_size_ = {1980, 1060};
+    this->fps_ = 0.f;
+    this->delta_time_ = 0.f;
+    game_status = MainMenu;
+
+    initWindow();
+    initFonts();
+    initMainMenu();
+    initPauseMenu();
+    setCurrentMousePosition();
+
+    initGameOverText();
 }
 
 void Game::initPlayer()
@@ -578,29 +614,25 @@ void Game::pollEvent()
         {
 			this->mainMenuUpdate();
             this->pauseMenuUpdate();
-            if (main_menu_ && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
+            if (getGameStatus() == MainMenu && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
             {
                 this->window_->close();
             }
-            else if (paused_game_ && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
+            else if (getGameStatus() == Paused && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
             {
-                this->paused_game_ = false;
-                this->in_game_ = true;
+                setGameStatus(InGame);
             }
-            else if (in_game_ && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
+            else if (getGameStatus() == InGame && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
             {
-                this->paused_game_ = true;
-                this->in_game_ = false;
+                setGameStatus(Paused);
             }
-            else if (game_over_ && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
+            else if (getGameStatus() == GameOver && key_pressed->scancode == sf::Keyboard::Scancode::Escape)
             {
                 this->window_->close();
             }
-            else if (game_over_ && key_pressed->scancode == sf::Keyboard::Scancode::Enter)
+            else if (getGameStatus() == GameOver && key_pressed->scancode == sf::Keyboard::Scancode::Enter)
             {
-                this->main_menu_ = true;
-                this->in_game_ = false;
-                this->game_over_ = false;
+                setGameStatus(GameOver);
             }
         }
     }
@@ -608,11 +640,12 @@ void Game::pollEvent()
 
 void Game::update()
 {
+
     this->pollEvent();
 
-    if (in_game_)
+    if (getGameStatus() == InGame)
     {
-		this->inGameUpdate();
+        inGameUpdate();
     }
 }
 
@@ -620,25 +653,16 @@ void Game::render()
 {
     this->window_->clear();
 
-    // Draw here
-    if (main_menu_)
+    switch (game_status)
     {
-        this->mainMenuRender();
-    }
-
-    else if (in_game_)
-    {
-		this->inGameRender();
-    }
-
-    else if (paused_game_)
-    {
-        this->pauseMenuRender();
-    }
-
-    else if (game_over_)
-    {
-        this->gameOverRender();
+    case MainMenu:
+        this->mainMenuRender(); break;
+    case InGame:
+        this->inGameRender(); break;
+    case Paused:
+        this->pauseMenuRender(); break;
+    case GameOver:
+        this->gameOverRender(); break;
     }
 
     this->window_->display();
