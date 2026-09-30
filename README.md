@@ -1,4 +1,4 @@
-# Swag Lords
+# Space War
 ![Game Menu](assets/screenshots/main_menu.png)
 
 
